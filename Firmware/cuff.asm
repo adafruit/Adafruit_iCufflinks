@@ -1,4 +1,4 @@
-.include "tn4def.inc"
+ .include "tn4def.inc"
 
 
 .equ    LED = 0				; LED connected to PB0
@@ -8,6 +8,8 @@
 
 .org 0x0000
 	rjmp	RESET
+.org 0x0008
+	rjmp	WDT
 
 .def	temp   		= R16	; general purpose temp
 .def	delaycnt1  	= R17   ; counter for 1ms delay loop
@@ -28,6 +30,15 @@ RESET:
 	ldi		temp, 0
 	out		OCR0AH, temp
 
+	; setup watchdog
+	ldi		temp, 0xD8		; write signature
+	out		CCP, temp
+	ldi		temp, (0<<WDE)|(1<<WDIE)	; set watchdog in interrupt mode
+	out		WDTCSR, temp
+
+	; enable sleep mode
+	ldi		temp, (1<<SE)	; by default the mode is 000 Idle
+	out		SMCR, temp
 
 LOOPSTART:
    	ldi ZH, high(PULSETAB*2) + 0x40   ; This is start of Code in Tiny4 (0x4000)
@@ -40,25 +51,17 @@ LOOP:
     rjmp    LOOPSTART
 
 NORELOAD:
-
 	out		OCR0AL, temp	; Shove the brightness into the PWM driver
 
-	; delay!
-	ldi		delayms, DELAYTIME			; delay ~17 ms
-DELAY:
-	ldi		delaycnt1, 0xFF
-	DELAY1MS:   ; this loop takes about 1ms (with 1 MHz clock)
-		dec		delaycnt1      ; 1 clock
-		cpi		delaycnt1, 0   ; 1 clock
-		brne	DELAY1MS       ; 2 clocks (on avg)
-	dec		delayms
-	cpi		delayms, 0
-	brne	DELAY
+	; reset the watchdog timer to full value and sleep until it pops an interrupt
+	wdr
+	sleep
 
 	rjmp	LOOP
 
+; this is a do nothing interrupt handler for the watchdog interrupt
+WDT:
+	reti
 
 PULSETAB:
 .db 255, 255, 255, 255, 255, 255, 255, 255, 252, 247, 235, 235, 230, 225, 218, 213, 208, 206, 199, 189, 187, 182, 182, 177, 175, 168, 165, 163, 158, 148, 146, 144, 144, 141, 139, 136, 134, 127, 122, 120, 117, 115, 112, 112, 110, 110, 108, 103, 96, 96, 93, 91, 88, 88, 88, 88, 84, 79, 76, 74, 74, 72, 72, 72, 72, 69, 69, 62, 60, 60, 57, 57, 57, 55, 55, 55, 55, 48, 48, 45, 45, 43, 43, 40, 40, 40, 40, 36, 36, 36, 33, 33, 31, 31, 31, 28, 28, 26, 26, 26, 26, 24, 24, 21, 21, 21, 21, 20, 19, 19, 16, 16, 16, 16, 14, 14, 14, 16, 12, 12, 12, 12, 12, 9, 9, 9, 9, 9, 9, 7, 7, 7, 7, 7, 7, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7, 9, 9, 9, 12, 12, 12, 14, 14, 16, 16, 16, 16, 21, 21, 21, 21, 24, 24, 26, 28, 28, 28, 31, 36, 33, 36, 36, 40, 40, 43, 43, 45, 48, 52, 55, 55, 55, 57, 62, 62, 64, 67, 72, 74, 79, 81, 86, 86, 86, 88, 93, 96, 98, 100, 112, 115, 117, 124, 127, 129, 129, 136, 141, 144, 148, 160, 165, 170, 175, 184, 189, 194, 199, 208, 213, 220, 237, 244, 252, 255, 255, 255, 255, 255, 255, 255, 0
-
-
