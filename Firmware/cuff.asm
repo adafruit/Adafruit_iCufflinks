@@ -40,6 +40,8 @@ RESET:
 	ldi		temp, (1<<SE)	; by default the mode is 000 Idle
 	out		SMCR, temp
 
+	sei		; enable global interrupts
+	
 LOOPSTART:
    	ldi ZH, high(PULSETAB*2) + 0x40   ; This is start of Code in Tiny4 (0x4000)
    	ldi ZL, low (PULSETAB*2) 		; init Z-pointer to storage bytes 
