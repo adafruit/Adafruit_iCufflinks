@@ -1,8 +1,6 @@
- .include "tn4def.inc"
-
+.include "tn4def.inc"
 
 .equ    LED = 0				; LED connected to PB0
-.equ	DELAYTIME = 17		; 17 ms between PWM changes
 
 .cseg 
 
@@ -12,12 +10,20 @@
 	rjmp	WDT
 
 .def	temp   		= R16	; general purpose temp
-.def	delaycnt1  	= R17   ; counter for 1ms delay loop
-.def	delayms  	= R28	; keeps track of how many ms left in delay
 
 RESET:
 	sbi		DDRB, LED		; LED output
 	sbi		PORTB, LED    	; LED off
+
+	; setting all pullups on unused pins (for power savings)
+	ldi		temp, (1<<PUEB3)|(1<<PUEB2)|(1<<PUEB1)		
+	out		PUEB, temp
+
+	; changing clock prescale to slow down the processing power (for power savings)
+	ldi		temp, 0xD8		; write signature
+	out		CCP, temp
+	ldi		temp, (1<<CLKPS3)|(0<<CLKPS2)|(0<<CLKPS1)|(0<<CLKPS0)	; scale to divide by 256
+	out		CLKPSR, temp
 
 	; set up fast PWM output timer WGM[3:0] = 0101
 	; COM0A1 = 1, COM0A0 = 0 or 1
@@ -41,7 +47,7 @@ RESET:
 	out		SMCR, temp
 
 	sei		; enable global interrupts
-	
+
 LOOPSTART:
    	ldi ZH, high(PULSETAB*2) + 0x40   ; This is start of Code in Tiny4 (0x4000)
    	ldi ZL, low (PULSETAB*2) 		; init Z-pointer to storage bytes 
