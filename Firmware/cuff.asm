@@ -25,8 +25,8 @@ RESET:
 	; it may look a little flickery.
 	ldi		temp, 0xD8		; write signature
 	out		CCP, temp
-	; scale to divide by 64. So 8Mhz -> 128kHz
-	ldi temp, (0<<CLKPS3)|(1<<CLKPS2)|(1<<CLKPS1)|(0<<CLKPS0) 
+	; scale to divide by 32. So 8Mhz -> 256kHz
+	ldi temp, (0<<CLKPS3)|(1<<CLKPS2)|(0<<CLKPS1)|(1<<CLKPS0) 
 	out		CLKPSR, temp
 
 	; set up fast PWM output timer WGM[3:0] = 0101
